@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, ActionSheetIOS } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import NightSkyBackground from './src/components/NightSkyBackground';
 import ImageCropScreen from './src/components/ImageCropScreen';
 import { MoonStorage } from './src/storage/moonStorage';
 import Calendar from '@/components/Calendar';
+import { askImageSource, takePicture, pickFromGallery } from './src/services/imageService';
 
 export default function App(): JSX.Element {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -22,26 +22,25 @@ export default function App(): JSX.Element {
     initStorage();
   }, []);
 
-  const showImagePicker = async (): Promise<void> => {
+  const handleImageSelection = async (): Promise<void> => {
     if (!canTakePhoto) return;
 
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: ['Cancel', 'Take Photo', 'Choose from Library'],
-          cancelButtonIndex: 0,
-        },
-        async (buttonIndex: number) => {
-          if (buttonIndex === 1) {
-            await takePicture();
-          } else if (buttonIndex === 2) {
-            await pickImage();
-          }
-        }
-      );
-    } else {
-      await pickImage();
+    const source = await askImageSource();
+    
+    if (source === 'cancel') {
+      return;
     }
+
+    const imageUri = source === 'camera' 
+      ? await takePicture()
+      : await pickFromGallery();
+
+    if (!imageUri) {
+      return;
+    }
+
+    setSelectedImage(imageUri);
+    setIsCropping(true);
   };
 
   const reset = async (): Promise<void> => {
@@ -49,35 +48,6 @@ export default function App(): JSX.Element {
     await storage.clear();
     setCanTakePhoto(true);
   }
-
-  const takePicture = async (): Promise<void> => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status === 'granted') {
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'],
-        allowsEditing: false,
-        quality: 1,
-      });
-
-      if (!result.canceled) {
-        setSelectedImage(result.assets[0].uri);
-        setIsCropping(true);
-      }
-    }
-  };
-
-  const pickImage = async (): Promise<void> => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: false,
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      setSelectedImage(result.assets[0].uri);
-      setIsCropping(true);
-    }
-  };
 
   const handleSaveImage = async (croppedImageUri: string): Promise<void> => {
     try {
@@ -130,7 +100,7 @@ export default function App(): JSX.Element {
               styles.button,
               !canTakePhoto && styles.buttonDisabled
             ]} 
-            onPress={showImagePicker}
+            onPress={handleImageSelection}
             disabled={!canTakePhoto}
           >
             <Text style={[

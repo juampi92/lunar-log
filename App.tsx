@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { spacing, typography } from './src/theme/theme';
 import { format } from 'date-fns';
 import NightSkyBackground from './src/components/NightSkyBackground';
 import { MoonStorage } from './src/storage/moonStorage';
@@ -23,7 +24,7 @@ export default function App(): JSX.Element {
 
     initStorage();
   }, []);
-  
+
   useEffect(() => {
     const loadSelectedDateEntry = async () => {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
@@ -31,29 +32,29 @@ export default function App(): JSX.Element {
       const entry = await storage.getEntry(dateStr);
       setCurrentEntry(entry);
     };
-    
+
     loadSelectedDateEntry();
   }, [selectedDate, entries]);
 
   const handleTakePicture = async (): Promise<void> => {
     const imageUri = await takePicture();
     if (!imageUri) return;
-    
+
     await handleSaveImage(imageUri);
   };
-  
+
   const handlePickFromGallery = async (): Promise<void> => {
     const imageUri = await pickFromGallery();
     if (!imageUri) return;
-    
+
     await handleSaveImage(imageUri);
   };
-  
+
   const handleMarkNotSeen = async (): Promise<void> => {
     const storage = MoonStorage.getInstance();
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     await storage.markDateAsNotSeen(dateStr);
-    
+
     // Refresh entries
     const allEntries = await storage.getAllEntries();
     setEntries(allEntries);
@@ -62,16 +63,16 @@ export default function App(): JSX.Element {
   const handleSaveImage = async (croppedImageUri: string): Promise<void> => {
     try {
       const storage = MoonStorage.getInstance();
-      
+
       // Save the cropped image to permanent storage
       const savedImagePath = await storage.saveImage(croppedImageUri);
-      
+
       // Add entry for the selected date
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
       await storage.updateEntry(dateStr, {
         image: savedImagePath,
         moon: 0.5, // TODO: Calculate actual moon phase
-        notSeen: false
+        notSeen: false,
       });
 
       // Refresh entries
@@ -86,20 +87,18 @@ export default function App(): JSX.Element {
   const handleDateSelect = (date: Date): void => {
     setSelectedDate(date);
   };
-  
+
   const handleRemoveEntry = async (): Promise<void> => {
     if (!currentEntry) return;
-    
+
     const storage = MoonStorage.getInstance();
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     await storage.deleteEntry(dateStr);
-    
+
     // Refresh entries
     const allEntries = await storage.getAllEntries();
     setEntries(allEntries);
   };
-
-
 
   return (
     <NightSkyBackground>
@@ -111,13 +110,9 @@ export default function App(): JSX.Element {
 
         {/* Section 2-4: Calendar (3/5) */}
         <View style={styles.calendarSection}>
-          <Calendar 
-            selectedDate={selectedDate} 
-            onDateSelect={handleDateSelect} 
-            entries={entries} 
-          />
+          <Calendar selectedDate={selectedDate} onDateSelect={handleDateSelect} entries={entries} />
         </View>
-        
+
         {/* Section 5: DateActionsMenu (1/5) */}
         <View style={styles.actionsSection}>
           <DateActionsMenu
@@ -137,7 +132,7 @@ export default function App(): JSX.Element {
 const styles = StyleSheet.create({
   content: {
     flex: 1,
-    paddingTop: 50,
+    paddingTop: spacing.xxl + spacing.md,
     flexDirection: 'column', // Stack children vertically
   },
   logoSection: {
@@ -146,13 +141,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   moon: {
-    fontSize: 50,
+    fontSize: typography.fontSizes.xxl + 18, // 50px
   },
   calendarSection: {
     flex: 3, // Takes 3/5 of the available space
   },
   actionsSection: {
     flex: 1, // Takes 1/5 of the available space
-    paddingBottom: 10,
+    paddingBottom: spacing.md,
   },
 });

@@ -1,6 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, Image, StyleSheet, FlatList, Pressable } from 'react-native';
-import { addDays, startOfWeek, format, isAfter, isBefore, addWeeks, subWeeks, getMonth } from 'date-fns';
+import {
+  addDays,
+  startOfWeek,
+  format,
+  isAfter,
+  isBefore,
+  addWeeks,
+  subWeeks,
+  getMonth,
+} from 'date-fns';
+import theme, { colors, spacing, borderRadius, typography } from '../theme/theme';
 import { Feather } from '@expo/vector-icons';
 
 const DAYS_IN_WEEK = 7;
@@ -8,7 +18,7 @@ const DAYS_IN_WEEK = 7;
 interface CalendarProps {
   onDateSelect: (date: Date) => void;
   selectedDate: Date;
-  entries: Record<string, { image?: string, notSeen?: boolean, date: string }>;
+  entries: Record<string, { image?: string; notSeen?: boolean; date: string }>;
 }
 
 function getWeekDates(date: Date): Date[] {
@@ -18,16 +28,18 @@ function getWeekDates(date: Date): Date[] {
 
 export default function Calendar({ onDateSelect, selectedDate, entries }: CalendarProps) {
   const [currentDate] = useState<Date>(new Date());
-  const [calendarData, setCalendarData] = useState<Record<string, { image?: string, notSeen?: boolean }>>({});
+  const [calendarData, setCalendarData] = useState<
+    Record<string, { image?: string; notSeen?: boolean }>
+  >({});
   const flatListRef = useRef<FlatList>(null);
-  
+
   useEffect(() => {
-    const mapped: Record<string, { image?: string, notSeen?: boolean }> = {};
+    const mapped: Record<string, { image?: string; notSeen?: boolean }> = {};
     for (const entry of Object.values(entries)) {
       if (entry.date) {
         mapped[entry.date] = {
           image: entry.image,
-          notSeen: entry.notSeen
+          notSeen: entry.notSeen,
         };
       }
     }
@@ -78,11 +90,12 @@ export default function Calendar({ onDateSelect, selectedDate, entries }: Calend
       <FlatList
         ref={flatListRef}
         data={weeksArray}
-        keyExtractor={(item) => item.toISOString()}
+        keyExtractor={item => item.toISOString()}
         renderItem={({ item: weekStart, index }) => {
           const days = getWeekDates(weekStart);
           const currentMonth = getMonth(days[0]);
-          const nextWeek = index < weeksArray.length - 1 ? getWeekDates(weeksArray[index + 1])[0] : null;
+          const nextWeek =
+            index < weeksArray.length - 1 ? getWeekDates(weeksArray[index + 1])[0] : null;
           const isMonthChange = nextWeek ? getMonth(nextWeek) !== currentMonth : false;
 
           const rows: JSX.Element[] = [];
@@ -93,7 +106,7 @@ export default function Calendar({ onDateSelect, selectedDate, entries }: Calend
             const dayNum = parseInt(format(day, 'd'));
             const weekDayIndex = parseInt(format(day, 'i')) - 1; // 0-6, Sunday is 0
             const entryData = calendarData[dayStr];
-            
+
             if (idx > 0 && dayNum < parseInt(format(days[idx - 1], 'd'))) {
               // Fill remaining cells with ghosts
               for (let i = currentWeekCells.length; i < DAYS_IN_WEEK; i++) {
@@ -101,7 +114,7 @@ export default function Calendar({ onDateSelect, selectedDate, entries }: Calend
                   <View style={[styles.dayCell, styles.ghostCell]} key={`ghost-${i}`} />
                 );
               }
-              
+
               // Add current row
               rows.push(
                 <View key={`row-${dayStr}-end`} style={styles.weekRow}>
@@ -114,22 +127,25 @@ export default function Calendar({ onDateSelect, selectedDate, entries }: Calend
               }
 
               // Create ghost cells up to the current weekday
-              currentWeekCells = Array(weekDayIndex + 1).fill(null).map((_, i) => (
-                <View style={[styles.dayCell, styles.ghostCell]} key={`ghost-new-${i}`} />
-              ));
+              currentWeekCells = Array(weekDayIndex + 1)
+                .fill(null)
+                .map((_, i) => (
+                  <View style={[styles.dayCell, styles.ghostCell]} key={`ghost-new-${i}`} />
+                ));
             }
-            
+
             const isToday = dayStr === format(currentDate, 'yyyy-MM-dd');
             const isFutureDate = isAfter(day, currentDate);
 
             currentWeekCells.push(
-              <Pressable 
-                style={[
-                  styles.dayCell, 
+              <Pressable
+                style={({ pressed }) => [
+                  styles.dayCell,
                   isToday && styles.dayCurrent,
                   dayStr === format(selectedDate, 'yyyy-MM-dd') && styles.daySelected,
-                  isFutureDate && { opacity: 0.5 } 
-                ]} 
+                  !isFutureDate && pressed && styles.dayHover,
+                  isFutureDate && { opacity: 0.5 },
+                ]}
                 key={dayStr}
                 onPress={() => {
                   if (!isFutureDate) {
@@ -141,14 +157,14 @@ export default function Calendar({ onDateSelect, selectedDate, entries }: Calend
                 {entryData?.notSeen ? (
                   <Feather name="eye-off" size={18} color="#fff" />
                 ) : entryData?.image ? (
-                  <Image source={{ uri: entryData.image }} style={styles.dayImage} />
+                  <Image source={{ uri: entryData.image }} style={styles.dayImage as any} />
                 ) : (
                   <Text style={styles.dayLabel}>{dayNum}</Text>
                 )}
               </Pressable>
             );
           });
-          
+
           if (currentWeekCells.length > 0) {
             // Fill remaining cells with ghosts
             for (let i = currentWeekCells.length; i < DAYS_IN_WEEK; i++) {
@@ -156,14 +172,14 @@ export default function Calendar({ onDateSelect, selectedDate, entries }: Calend
                 <View style={[styles.dayCell, styles.ghostCell]} key={`ghost-final-${i}`} />
               );
             }
-            
+
             rows.push(
               <View key={`row-final-${weekStart}`} style={styles.weekRow}>
                 {currentWeekCells}
               </View>
             );
           }
-          
+
           return <View>{rows}</View>;
         }}
       />
@@ -174,58 +190,70 @@ export default function Calendar({ onDateSelect, selectedDate, entries }: Calend
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 10,
+    padding: spacing.md,
   },
   weekRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   dayCell: {
     width: 40,
     height: 40,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: colors.calendarBorder,
+    borderRadius: borderRadius.xs,
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 2,
+    marginHorizontal: spacing.xs / 2,
+    overflow: 'hidden',
+    ...theme.shadows.small,
   },
   dayCurrent: {
-    backgroundColor: 'rgba(100, 100, 150, 0.5)',
+    backgroundColor: colors.calendarToday,
+    borderWidth: 1,
+    borderColor: colors.primaryLight,
   },
   daySelected: {
-    backgroundColor: 'rgba(100, 100, 200, 0.8)',
+    backgroundColor: colors.calendarSelected,
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: colors.calendarSelectedBorder,
+    transform: [{ scale: 1.05 }],
+  },
+  dayHover: {
+    backgroundColor: colors.calendarHover,
+    borderColor: colors.primaryLight,
   },
   dayLabel: {
-    fontSize: 14,
-    color: '#FFF',
+    fontSize: typography.fontSizes.sm,
+    color: colors.textPrimary,
+    fontWeight: "500",
   },
   dayImage: {
     width: 40,
     height: 40,
-    resizeMode: 'center',
+    resizeMode: 'cover',
     maxWidth: 40,
     maxHeight: 40,
   },
   ghostCell: {
     opacity: 0,
+    borderColor: colors.transparent,
   },
   monthSeparator: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 16,
+    marginVertical: spacing.md,
   },
   monthLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#ccc',
+    backgroundColor: colors.divider,
   },
   monthLabel: {
-    color: '#FFF',
-    marginHorizontal: 10,
-    fontSize: 16,
-    fontWeight: '500',
+    color: colors.textPrimary,
+    marginHorizontal: spacing.md,
+    fontSize: typography.fontSizes.md,
+    fontWeight: "500",
   },
 });

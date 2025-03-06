@@ -47,14 +47,14 @@ export class MoonStorage {
     const today = format(new Date(), 'yyyy-MM-dd');
     return !!this.log.entries[today];
   }
-  
+
   async markDateAsNotSeen(date: string): Promise<void> {
     this.log.entries[date] = {
       date,
       moon: 0,
-      notSeen: true
+      notSeen: true,
     };
-    
+
     await this.save();
   }
 
@@ -69,10 +69,10 @@ export class MoonStorage {
   async saveImage(uri: string): Promise<string> {
     const filename = `moon_${Date.now()}.jpg`;
     const destination = `${IMAGE_DIR}${filename}`;
-    
+
     await FileSystem.copyAsync({
       from: uri,
-      to: destination
+      to: destination,
     });
 
     return destination;
@@ -80,10 +80,10 @@ export class MoonStorage {
 
   async addEntry(entry: Omit<MoonEntry, 'date'>): Promise<void> {
     const date = format(new Date(), 'yyyy-MM-dd');
-    
+
     this.log.entries[date] = {
       ...entry,
-      date
+      date,
     };
 
     await this.save();
@@ -95,13 +95,13 @@ export class MoonStorage {
       this.log.entries[date] = {
         date,
         moon: 0,
-        ...entry
+        ...entry,
       };
     } else {
       // Update existing entry
       this.log.entries[date] = {
         ...this.log.entries[date],
-        ...entry
+        ...entry,
       };
     }
 
@@ -127,8 +127,8 @@ export class MoonStorage {
 
     // Delete all images
     const files = await FileSystem.readDirectoryAsync(IMAGE_DIR);
-    await Promise.all(files.map((file) => FileSystem.deleteAsync(`${IMAGE_DIR}${file}`)));
-   
+    await Promise.all(files.map(file => FileSystem.deleteAsync(`${IMAGE_DIR}${file}`)));
+
     await this.save();
   }
 }

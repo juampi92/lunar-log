@@ -1,4 +1,4 @@
-import { Platform, ActionSheetIOS, Alert } from 'react-native';
+import { Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
 const imagePickerOptions: ImagePicker.ImagePickerOptions = {

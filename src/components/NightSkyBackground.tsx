@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, ReactNode } from 'react';
 import { View, Dimensions, StyleSheet, Animated, Easing, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { colors, animations } from '../theme/theme';
 
 interface Star {
   x: number;
@@ -44,13 +45,13 @@ export default function NightSkyBackground({ children }: NightSkyBackgroundProps
     Animated.parallel([
       Animated.timing(forestOpacity, {
         toValue: 0.7, // Semi-transparent to blend with the background
-        duration: 1500,
+        duration: animations.durations.long,
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }),
       Animated.timing(starRotate, {
         toValue: 1,
-        duration: 1500,
+        duration: animations.durations.long,
         easing: Easing.out(Easing.exp),
         useNativeDriver: true,
       }),
@@ -64,9 +65,16 @@ export default function NightSkyBackground({ children }: NightSkyBackgroundProps
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#001a33', '#003366']} style={styles.gradient} pointerEvents="box-none">
+      <LinearGradient
+        colors={[colors.bgGradientStart, colors.bgGradientEnd]}
+        style={styles.gradient}
+        pointerEvents="box-none"
+      >
         {/* Forest background layer - pointerEvents none to allow interaction with elements above */}
-        <Animated.View style={[styles.forestBackground, { opacity: forestOpacity }]} pointerEvents="none">
+        <Animated.View
+          style={[styles.forestBackground, { opacity: forestOpacity }]}
+          pointerEvents="none"
+        >
           <Image
             source={{
               uri: 'https://via.placeholder.com/400x200/000000/FFFFFF?text=Forest+Silhouette',
@@ -75,7 +83,7 @@ export default function NightSkyBackground({ children }: NightSkyBackgroundProps
             resizeMode="cover"
           />
         </Animated.View>
-        
+
         {/* Stars layer - pointerEvents none to allow interaction with content */}
         <Animated.View
           style={[
@@ -117,7 +125,7 @@ const STAR_SIZE = 2;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.primaryDark,
   },
   gradient: {
     flex: 1,
@@ -133,7 +141,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: STAR_SIZE,
     height: STAR_SIZE,
-    backgroundColor: '#fff',
+    backgroundColor: colors.textPrimary,
     borderRadius: STAR_SIZE / 2,
   },
   forestBackground: {

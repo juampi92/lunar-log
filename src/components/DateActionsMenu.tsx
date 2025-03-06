@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { format } from 'date-fns';
 import { Feather } from '@expo/vector-icons';
 import { MoonEntry } from '../storage/types';
+import theme, { colors, spacing, borderRadius, typography } from '../theme/theme';
 
 interface DateActionsMenuProps {
   selectedDate: Date;
@@ -22,7 +23,7 @@ export default function DateActionsMenu({
   onRemoveEntry,
 }: DateActionsMenuProps) {
   const formattedDate = format(selectedDate, 'MMMM d, yyyy');
-  
+
   // If there's an entry for this date, show the entry and a remove button
   if (entry) {
     return (
@@ -36,11 +37,7 @@ export default function DateActionsMenu({
             </View>
           ) : entry.image ? (
             <View style={styles.imageContainer}>
-              <Image 
-                source={{ uri: entry.image }} 
-                style={styles.entryImage} 
-                resizeMode="cover"
-              />
+              <Image source={{ uri: entry.image }} style={styles.entryImage} resizeMode="cover" />
             </View>
           ) : null}
           <TouchableOpacity style={styles.removeButton} onPress={onRemoveEntry}>
@@ -50,7 +47,7 @@ export default function DateActionsMenu({
       </View>
     );
   }
-  
+
   // If there's no entry, show the action buttons
   return (
     <View style={styles.container}>
@@ -72,30 +69,32 @@ export default function DateActionsMenu({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'rgba(30, 30, 50, 0.8)',
-    borderRadius: 12,
-    padding: 16,
-    marginHorizontal: 16,
-    marginBottom: 16,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.md,
+    ...theme.shadows.small,
   },
   dateText: {
-    color: '#fff',
-    fontSize: 18,
+    color: colors.textPrimary,
+    fontSize: typography.fontSizes.lg,
     fontWeight: '500',
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   actionButtons: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
   },
   actionButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(60, 60, 80, 0.8)',
+    width: spacing.xxl,
+    height: spacing.xxl,
+    borderRadius: borderRadius.round,
+    backgroundColor: colors.surfaceLight,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 12,
+    marginLeft: spacing.md,
+    ...theme.shadows.small,
   },
   actionContent: {
     flexDirection: 'row',
@@ -107,25 +106,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   notSeenText: {
-    color: '#fff',
-    marginLeft: 8,
-    fontSize: 16,
+    color: colors.textPrimary,
+    marginLeft: spacing.sm,
+    fontSize: typography.fontSizes.md,
   },
   imageContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   entryImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
+    width: spacing.xxl,
+    height: spacing.xxl,
+    borderRadius: borderRadius.sm,
+    ...theme.shadows.small,
   },
   removeButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(200, 50, 50, 0.8)',
+    width: spacing.xxl,
+    height: spacing.xxl,
+    borderRadius: borderRadius.round,
+    backgroundColor: colors.error,
     justifyContent: 'center',
     alignItems: 'center',
+    ...theme.shadows.small,
   },
 });

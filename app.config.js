@@ -7,25 +7,23 @@ export default {
   splash: {
     image: './assets/splash.png',
     resizeMode: 'contain',
-    backgroundColor: '#1a237e'
+    backgroundColor: '#1a237e',
   },
   updates: {
-    fallbackToCacheTimeout: 0
+    fallbackToCacheTimeout: 0,
   },
-  assetBundlePatterns: [
-    '**/*'
-  ],
+  assetBundlePatterns: ['**/*'],
   ios: {
     supportsTablet: true,
-    bundleIdentifier: 'com.juampi92.lunar-log'
+    bundleIdentifier: 'com.juampi92.lunar-log',
   },
   android: {
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
-      backgroundColor: '#1a237e'
-    }
+      backgroundColor: '#1a237e',
+    },
   },
   web: {
-    favicon: './assets/favicon.png'
-  }
+    favicon: './assets/favicon.png',
+  },
 };

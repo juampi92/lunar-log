@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { format } from 'date-fns';
 import NightSkyBackground from './src/components/NightSkyBackground';
-import ImageCropScreen from './src/components/ImageCropScreen';
 import { MoonStorage } from './src/storage/moonStorage';
 import Calendar from '@/components/Calendar';
 import DateActionsMenu from './src/components/DateActionsMenu';
@@ -10,8 +9,6 @@ import { takePicture, pickFromGallery } from './src/services/imageService';
 import { MoonEntry } from './src/storage/types';
 
 export default function App(): JSX.Element {
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [isCropping, setIsCropping] = useState<boolean>(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [currentEntry, setCurrentEntry] = useState<MoonEntry | null>(null);
   const [entries, setEntries] = useState<Record<string, MoonEntry>>({});
@@ -42,16 +39,14 @@ export default function App(): JSX.Element {
     const imageUri = await takePicture();
     if (!imageUri) return;
     
-    setSelectedImage(imageUri);
-    setIsCropping(true);
+    await handleSaveImage(imageUri);
   };
   
   const handlePickFromGallery = async (): Promise<void> => {
     const imageUri = await pickFromGallery();
     if (!imageUri) return;
     
-    setSelectedImage(imageUri);
-    setIsCropping(true);
+    await handleSaveImage(imageUri);
   };
   
   const handleMarkNotSeen = async (): Promise<void> => {
@@ -86,14 +81,6 @@ export default function App(): JSX.Element {
       console.error('Failed to save moon entry:', error);
       // TODO: Show error to user
     }
-
-    setSelectedImage(null);
-    setIsCropping(false);
-  };
-
-  const handleCancel = (): void => {
-    setSelectedImage(null);
-    setIsCropping(false);
   };
 
   const handleDateSelect = (date: Date): void => {
@@ -112,15 +99,7 @@ export default function App(): JSX.Element {
     setEntries(allEntries);
   };
 
-  if (isCropping && selectedImage) {
-    return (
-      <ImageCropScreen
-        sourceUri={selectedImage}
-        onCancel={handleCancel}
-        onCropDone={handleSaveImage}
-      />
-    );
-  }
+
 
   return (
     <NightSkyBackground>

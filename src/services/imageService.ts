@@ -1,79 +1,59 @@
 import { Platform, ActionSheetIOS, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
-export type ImageSource = 'camera' | 'gallery' | 'cancel';
-
-export const askImageSource = async (): Promise<ImageSource> => {
-  if (Platform.OS === 'ios') {
-    return new Promise((resolve) => {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: ['Cancel', 'Take Photo', 'Choose from Library'],
-          cancelButtonIndex: 0,
-        },
-        (buttonIndex: number) => {
-          if (buttonIndex === 0) resolve('cancel');
-          if (buttonIndex === 1) resolve('camera');
-          if (buttonIndex === 2) resolve('gallery');
-        }
-      );
-    });
-  }
-
-  // For Android, we'll use Alert
-  return new Promise((resolve) => {
-    Alert.alert(
-      'Select Image Source',
-      'Choose where to get your moon picture from',
-      [
-        {
-          text: 'Cancel',
-          onPress: () => resolve('cancel'),
-          style: 'cancel',
-        },
-        {
-          text: 'Take Photo',
-          onPress: () => resolve('camera'),
-        },
-        {
-          text: 'Choose from Library',
-          onPress: () => resolve('gallery'),
-        },
-      ],
-      { cancelable: true, onDismiss: () => resolve('cancel') }
-    );
-  });
+const imagePickerOptions: ImagePicker.ImagePickerOptions = {
+  mediaTypes: 'images',
+  allowsEditing: true,
+  aspect: [1, 1],
+  quality: 1,
 };
 
+/**
+ * Take a picture with the device camera and crop it to a 1:1 aspect ratio
+ * @returns The URI of the cropped image or null if canceled
+ */
 export const takePicture = async (): Promise<string | null> => {
   const { status } = await ImagePicker.requestCameraPermissionsAsync();
   if (status !== 'granted') {
+    Alert.alert('Permission Required', 'Camera permission is needed to take pictures');
     return null;
   }
 
-  const result = await ImagePicker.launchCameraAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
-    allowsEditing: false,
-    quality: 1,
-  });
+  try {
+    const result = await ImagePicker.launchCameraAsync(imagePickerOptions);
 
-  if (result.canceled) {
+    if (result.canceled) {
+      return null;
+    }
+
+    return result.assets[0].uri;
+  } catch (error) {
+    console.error('Error taking picture:', error);
     return null;
   }
-
-  return result.assets[0].uri;
 };
 
+/**
+ * Pick an image from the device gallery and crop it to a 1:1 aspect ratio
+ * @returns The URI of the cropped image or null if canceled
+ */
 export const pickFromGallery = async (): Promise<string | null> => {
-  const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
-    allowsEditing: false,
-    quality: 1,
-  });
-
-  if (result.canceled) {
+  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (status !== 'granted') {
+    Alert.alert('Permission Required', 'Photo library permission is needed to select images');
     return null;
   }
 
-  return result.assets[0].uri;
+  try {
+    const result = await ImagePicker.launchImageLibraryAsync(imagePickerOptions);
+
+    if (result.canceled) {
+      return null;
+    }
+
+    return result.assets[0].uri;
+  } catch (error) {
+    console.error('Error picking from gallery:', error);
+    return null;
+  }
 };

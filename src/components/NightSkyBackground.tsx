@@ -12,7 +12,7 @@ interface NightSkyBackgroundProps {
 }
 
 function seededRandom(seed: number): number {
-  let x = Math.sin(seed) * 10000;
+  const x = Math.sin(seed) * 10000;
   return x - Math.floor(x);
 }
 
@@ -37,14 +37,14 @@ function generateStars(numStars: number): Star[] {
 
 export default function NightSkyBackground({ children }: NightSkyBackgroundProps): JSX.Element {
   const [stars] = useState<Star[]>(() => generateStars(30));
-  const forestTranslate = useRef(new Animated.Value(50)).current;
+  const forestOpacity = useRef(new Animated.Value(0)).current;
   const starRotate = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(forestTranslate, {
-        toValue: 0,
-        duration: 1000,
+      Animated.timing(forestOpacity, {
+        toValue: 0.7, // Semi-transparent to blend with the background
+        duration: 1500,
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }),
@@ -55,7 +55,7 @@ export default function NightSkyBackground({ children }: NightSkyBackgroundProps
         useNativeDriver: true,
       }),
     ]).start();
-  }, [forestTranslate, starRotate]);
+  }, [forestOpacity, starRotate]);
 
   const rotateInterpolate = starRotate.interpolate({
     inputRange: [0, 1],
@@ -64,7 +64,19 @@ export default function NightSkyBackground({ children }: NightSkyBackgroundProps
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#001a33', '#003366']} style={styles.gradient}>
+      <LinearGradient colors={['#001a33', '#003366']} style={styles.gradient} pointerEvents="box-none">
+        {/* Forest background layer - pointerEvents none to allow interaction with elements above */}
+        <Animated.View style={[styles.forestBackground, { opacity: forestOpacity }]} pointerEvents="none">
+          <Image
+            source={{
+              uri: 'https://via.placeholder.com/400x200/000000/FFFFFF?text=Forest+Silhouette',
+            }}
+            style={styles.forestBackgroundImage}
+            resizeMode="cover"
+          />
+        </Animated.View>
+        
+        {/* Stars layer - pointerEvents none to allow interaction with content */}
         <Animated.View
           style={[
             styles.starContainer,
@@ -76,6 +88,7 @@ export default function NightSkyBackground({ children }: NightSkyBackgroundProps
               ],
             },
           ]}
+          pointerEvents="none"
         >
           {stars.map((star, index) => (
             <View
@@ -91,24 +104,8 @@ export default function NightSkyBackground({ children }: NightSkyBackgroundProps
           ))}
         </Animated.View>
 
+        {/* Content layer */}
         {children}
-
-        <Animated.View
-          style={[
-            styles.forestContainer,
-            {
-              transform: [{ translateY: forestTranslate }],
-            },
-          ]}
-        >
-          <Image
-            source={{
-              uri: 'https://via.placeholder.com/400x200/000000/FFFFFF?text=Forest+Silhouette',
-            }}
-            style={styles.forestImage}
-            resizeMode="stretch"
-          />
-        </Animated.View>
       </LinearGradient>
     </View>
   );
@@ -130,6 +127,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: width,
     height: height,
+    zIndex: 10,
   },
   star: {
     position: 'absolute',
@@ -138,12 +136,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: STAR_SIZE / 2,
   },
-  forestContainer: {
+  forestBackground: {
+    position: 'absolute',
     width: '100%',
-    height: 200,
-    overflow: 'hidden',
+    height: '100%',
+    zIndex: 5,
   },
-  forestImage: {
+  forestBackgroundImage: {
     width: '100%',
     height: '100%',
   },

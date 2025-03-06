@@ -1,23 +1,40 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, Image, StyleSheet, FlatList } from 'react-native';
-import { addDays, subDays, startOfWeek, format, isAfter, isBefore, addWeeks, subWeeks, getMonth } from 'date-fns';
-import { MoonStorage } from '../storage/moonStorage';
+import { View, Text, Image, StyleSheet, FlatList, Pressable } from 'react-native';
+import { addDays, startOfWeek, format, isAfter, isBefore, addWeeks, subWeeks, getMonth } from 'date-fns';
+import { Feather } from '@expo/vector-icons';
 
 const DAYS_IN_WEEK = 7;
-const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+interface CalendarProps {
+  onDateSelect: (date: Date) => void;
+  selectedDate: Date;
+  entries: Record<string, { image?: string, notSeen?: boolean, date: string }>;
+}
 
 function getWeekDates(date: Date): Date[] {
   const start = startOfWeek(date, { weekStartsOn: 0 });
   return Array.from({ length: DAYS_IN_WEEK }, (_, i) => addDays(start, i));
 }
 
-export default function Calendar() {
+export default function Calendar({ onDateSelect, selectedDate, entries }: CalendarProps) {
   const [currentDate] = useState<Date>(new Date());
-  const [calendarData, setCalendarData] = useState<Record<string, string | undefined>>({});
+  const [calendarData, setCalendarData] = useState<Record<string, { image?: string, notSeen?: boolean }>>({});
   const flatListRef = useRef<FlatList>(null);
   
   useEffect(() => {
-    loadMoonData();
+    const mapped: Record<string, { image?: string, notSeen?: boolean }> = {};
+    for (const entry of Object.values(entries)) {
+      if (entry.date) {
+        mapped[entry.date] = {
+          image: entry.image,
+          notSeen: entry.notSeen
+        };
+      }
+    }
+    setCalendarData(mapped);
+  }, [entries]);
+
+  useEffect(() => {
     setTimeout(() => {
       if (flatListRef.current) {
         flatListRef.current.scrollToEnd({ animated: false });
@@ -25,29 +42,11 @@ export default function Calendar() {
     }, 100);
   }, []);
 
-  async function loadMoonData() {
-    try {
-      const storage = MoonStorage.getInstance();
-      await storage.init();
-      const allEntries = await storage.getAllEntries();
-      const mapped: Record<string, string> = {};
-
-      for (const entry of Object.values(allEntries)) {
-        if (entry.date && entry.image) {
-          mapped[entry.date] = entry.image;
-        }
-      }
-      setCalendarData(mapped);
-    } catch (err) {
-      console.error('Error loading moon data:', err);
-    }
-  }
-
   function getWeeksToDisplay(): Date[] {
     const weeks: Date[] = [];
     const WEEKS_IN_PAST = 2;
-    let earliestWeekStart = startOfWeek(subWeeks(new Date(), WEEKS_IN_PAST), { weekStartsOn: 0 });
-    let latestWeekStart = startOfWeek(addWeeks(new Date(), 0), { weekStartsOn: 0 });
+    const earliestWeekStart = startOfWeek(subWeeks(new Date(), WEEKS_IN_PAST), { weekStartsOn: 0 });
+    const latestWeekStart = startOfWeek(addWeeks(new Date(), 0), { weekStartsOn: 0 });
 
     let cursor = earliestWeekStart;
     while (isBefore(cursor, addDays(latestWeekStart, 1))) {
@@ -70,6 +69,10 @@ export default function Calendar() {
     </View>
   );
 
+  const handleDatePress = (date: Date) => {
+    onDateSelect(date);
+  };
+
   return (
     <View style={styles.container}>
       <FlatList
@@ -82,14 +85,14 @@ export default function Calendar() {
           const nextWeek = index < weeksArray.length - 1 ? getWeekDates(weeksArray[index + 1])[0] : null;
           const isMonthChange = nextWeek ? getMonth(nextWeek) !== currentMonth : false;
 
-          let rows: JSX.Element[] = [];
+          const rows: JSX.Element[] = [];
           let currentWeekCells: JSX.Element[] = [];
 
           days.forEach((day, idx) => {
             const dayStr = format(day, 'yyyy-MM-dd');
             const dayNum = parseInt(format(day, 'd'));
             const weekDayIndex = parseInt(format(day, 'i')) - 1; // 0-6, Sunday is 0
-            const imageUri = calendarData[dayStr];
+            const entryData = calendarData[dayStr];
             
             if (idx > 0 && dayNum < parseInt(format(days[idx - 1], 'd'))) {
               // Fill remaining cells with ghosts
@@ -117,14 +120,32 @@ export default function Calendar() {
             }
             
             const isToday = dayStr === format(currentDate, 'yyyy-MM-dd');
+            const isFutureDate = isAfter(day, currentDate);
+
             currentWeekCells.push(
-              <View style={[styles.dayCell, isToday && styles.dayCurrent ]} key={dayStr}>
-                {imageUri ? (
-                  <Image source={{ uri: imageUri }} style={styles.dayImage} />
+              <Pressable 
+                style={[
+                  styles.dayCell, 
+                  isToday && styles.dayCurrent,
+                  dayStr === format(selectedDate, 'yyyy-MM-dd') && styles.daySelected,
+                  isFutureDate && { opacity: 0.5 } 
+                ]} 
+                key={dayStr}
+                onPress={() => {
+                  if (!isFutureDate) {
+                    handleDatePress(day);
+                  }
+                }}
+                disabled={isFutureDate}
+              >
+                {entryData?.notSeen ? (
+                  <Feather name="eye-off" size={18} color="#fff" />
+                ) : entryData?.image ? (
+                  <Image source={{ uri: entryData.image }} style={styles.dayImage} />
                 ) : (
                   <Text style={styles.dayLabel}>{dayNum}</Text>
                 )}
-              </View>
+              </Pressable>
             );
           });
           
@@ -170,7 +191,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 2,
   },
   dayCurrent: {
+    backgroundColor: 'rgba(100, 100, 150, 0.5)',
+  },
+  daySelected: {
+    backgroundColor: 'rgba(100, 100, 200, 0.8)',
     borderWidth: 2,
+    borderColor: '#fff',
   },
   dayLabel: {
     fontSize: 14,

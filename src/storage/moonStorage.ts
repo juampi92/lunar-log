@@ -39,13 +39,23 @@ export class MoonStorage {
   }
 
   private async save(): Promise<void> {
-    console.log('Saving log:', this.log);
+    // Save the log to AsyncStorage
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(this.log));
   }
 
   async hasEntryForToday(): Promise<boolean> {
     const today = format(new Date(), 'yyyy-MM-dd');
     return !!this.log.entries[today];
+  }
+  
+  async markDateAsNotSeen(date: string): Promise<void> {
+    this.log.entries[date] = {
+      date,
+      moon: 0,
+      notSeen: true
+    };
+    
+    await this.save();
   }
 
   async getEntry(date: string): Promise<MoonEntry | null> {
@@ -81,13 +91,19 @@ export class MoonStorage {
 
   async updateEntry(date: string, entry: Partial<MoonEntry>): Promise<void> {
     if (!this.log.entries[date]) {
-      throw new Error(`No entry exists for date: ${date}`);
+      // Create a new entry if it doesn't exist
+      this.log.entries[date] = {
+        date,
+        moon: 0,
+        ...entry
+      };
+    } else {
+      // Update existing entry
+      this.log.entries[date] = {
+        ...this.log.entries[date],
+        ...entry
+      };
     }
-
-    this.log.entries[date] = {
-      ...this.log.entries[date],
-      ...entry
-    };
 
     await this.save();
   }

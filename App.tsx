@@ -1,53 +1,68 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { format } from 'date-fns';
 import NightSkyBackground from './src/components/NightSkyBackground';
 import ImageCropScreen from './src/components/ImageCropScreen';
 import { MoonStorage } from './src/storage/moonStorage';
 import Calendar from '@/components/Calendar';
-import { askImageSource, takePicture, pickFromGallery } from './src/services/imageService';
+import DateActionsMenu from './src/components/DateActionsMenu';
+import { takePicture, pickFromGallery } from './src/services/imageService';
+import { MoonEntry } from './src/storage/types';
 
 export default function App(): JSX.Element {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isCropping, setIsCropping] = useState<boolean>(false);
-  const [canTakePhoto, setCanTakePhoto] = useState<boolean>(true);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [currentEntry, setCurrentEntry] = useState<MoonEntry | null>(null);
+  const [entries, setEntries] = useState<Record<string, MoonEntry>>({});
 
   useEffect(() => {
     const initStorage = async () => {
       const storage = MoonStorage.getInstance();
       await storage.init();
-      const hasToday = await storage.hasEntryForToday();
-      setCanTakePhoto(!hasToday);
+      const allEntries = await storage.getAllEntries();
+      setEntries(allEntries);
     };
 
     initStorage();
   }, []);
-
-  const handleImageSelection = async (): Promise<void> => {
-    if (!canTakePhoto) return;
-
-    const source = await askImageSource();
+  
+  useEffect(() => {
+    const loadSelectedDateEntry = async () => {
+      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+      const storage = MoonStorage.getInstance();
+      const entry = await storage.getEntry(dateStr);
+      setCurrentEntry(entry);
+    };
     
-    if (source === 'cancel') {
-      return;
-    }
+    loadSelectedDateEntry();
+  }, [selectedDate, entries]);
 
-    const imageUri = source === 'camera' 
-      ? await takePicture()
-      : await pickFromGallery();
-
-    if (!imageUri) {
-      return;
-    }
-
+  const handleTakePicture = async (): Promise<void> => {
+    const imageUri = await takePicture();
+    if (!imageUri) return;
+    
     setSelectedImage(imageUri);
     setIsCropping(true);
   };
-
-  const reset = async (): Promise<void> => {
+  
+  const handlePickFromGallery = async (): Promise<void> => {
+    const imageUri = await pickFromGallery();
+    if (!imageUri) return;
+    
+    setSelectedImage(imageUri);
+    setIsCropping(true);
+  };
+  
+  const handleMarkNotSeen = async (): Promise<void> => {
     const storage = MoonStorage.getInstance();
-    await storage.clear();
-    setCanTakePhoto(true);
-  }
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    await storage.markDateAsNotSeen(dateStr);
+    
+    // Refresh entries
+    const allEntries = await storage.getAllEntries();
+    setEntries(allEntries);
+  };
 
   const handleSaveImage = async (croppedImageUri: string): Promise<void> => {
     try {
@@ -56,13 +71,17 @@ export default function App(): JSX.Element {
       // Save the cropped image to permanent storage
       const savedImagePath = await storage.saveImage(croppedImageUri);
       
-      // Add entry for today
-      await storage.addEntry({
+      // Add entry for the selected date
+      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+      await storage.updateEntry(dateStr, {
         image: savedImagePath,
         moon: 0.5, // TODO: Calculate actual moon phase
+        notSeen: false
       });
 
-      setCanTakePhoto(false);
+      // Refresh entries
+      const allEntries = await storage.getAllEntries();
+      setEntries(allEntries);
     } catch (error) {
       console.error('Failed to save moon entry:', error);
       // TODO: Show error to user
@@ -75,6 +94,22 @@ export default function App(): JSX.Element {
   const handleCancel = (): void => {
     setSelectedImage(null);
     setIsCropping(false);
+  };
+
+  const handleDateSelect = (date: Date): void => {
+    setSelectedDate(date);
+  };
+  
+  const handleRemoveEntry = async (): Promise<void> => {
+    if (!currentEntry) return;
+    
+    const storage = MoonStorage.getInstance();
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    await storage.deleteEntry(dateStr);
+    
+    // Refresh entries
+    const allEntries = await storage.getAllEntries();
+    setEntries(allEntries);
   };
 
   if (isCropping && selectedImage) {
@@ -90,36 +125,30 @@ export default function App(): JSX.Element {
   return (
     <NightSkyBackground>
       <View style={styles.content}>
-        <View style={styles.moonContainer}>
+        {/* Section 1: Logo (1/5) */}
+        <View style={styles.logoSection}>
           <Text style={styles.moon}>🌙</Text>
         </View>
 
-        <View style={styles.centerContent}>
-          <TouchableOpacity 
-            style={[
-              styles.button,
-              !canTakePhoto && styles.buttonDisabled
-            ]} 
-            onPress={handleImageSelection}
-            disabled={!canTakePhoto}
-          >
-            <Text style={[
-              styles.buttonText,
-              !canTakePhoto && styles.buttonTextDisabled
-            ]}>
-              {canTakePhoto ? 'Take Moon Picture' : 'Picture taken for today'}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.button} 
-            onPress={reset}
-          >
-            <Text style={styles.buttonText}>Reset</Text>
-          </TouchableOpacity>
+        {/* Section 2-4: Calendar (3/5) */}
+        <View style={styles.calendarSection}>
+          <Calendar 
+            selectedDate={selectedDate} 
+            onDateSelect={handleDateSelect} 
+            entries={entries} 
+          />
         </View>
-        <View style={styles.centerContent}>
-          <Calendar />
+        
+        {/* Section 5: DateActionsMenu (1/5) */}
+        <View style={styles.actionsSection}>
+          <DateActionsMenu
+            selectedDate={selectedDate}
+            entry={currentEntry}
+            onMarkNotSeen={handleMarkNotSeen}
+            onTakePicture={handleTakePicture}
+            onPickFromGallery={handlePickFromGallery}
+            onRemoveEntry={handleRemoveEntry}
+          />
         </View>
       </View>
     </NightSkyBackground>
@@ -129,33 +158,22 @@ export default function App(): JSX.Element {
 const styles = StyleSheet.create({
   content: {
     flex: 1,
+    paddingTop: 50,
+    flexDirection: 'column', // Stack children vertically
   },
-  moonContainer: {
-    marginTop: 50,
-    alignSelf: 'center',
+  logoSection: {
+    flex: 1, // Takes 1/5 of the available space
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   moon: {
     fontSize: 50,
   },
-  centerContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  calendarSection: {
+    flex: 3, // Takes 3/5 of the available space
   },
-  button: {
-    backgroundColor: '#222',
-    paddingVertical: 15,
-    paddingHorizontal: 25,
-    borderRadius: 8,
-  },
-  buttonDisabled: {
-    backgroundColor: '#444',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-  },
-  buttonTextDisabled: {
-    color: '#999',
+  actionsSection: {
+    flex: 1, // Takes 1/5 of the available space
+    paddingBottom: 10,
   },
 });

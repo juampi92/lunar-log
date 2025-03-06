@@ -16,7 +16,8 @@ export default {
     '**/*'
   ],
   ios: {
-    supportsTablet: true
+    supportsTablet: true,
+    bundleIdentifier: 'com.juampi92.lunar-log'
   },
   android: {
     adaptiveIcon: {

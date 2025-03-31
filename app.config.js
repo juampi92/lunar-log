@@ -7,7 +7,7 @@ export default {
   splash: {
     image: './assets/splash-icon.png',
     resizeMode: 'contain',
-    backgroundColor: '#1a237e',
+    backgroundColor: '#f5f2ed',
   },
   updates: {
     fallbackToCacheTimeout: 0,
@@ -20,7 +20,7 @@ export default {
   android: {
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
-      backgroundColor: '#1a237e',
+      backgroundColor: '#f5f2ed',
     },
     package: 'com.juampi92.lunarlog',
   },

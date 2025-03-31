@@ -52,13 +52,24 @@ export default function Calendar({ onDateSelect, selectedDate, entries }: Calend
         flatListRef.current.scrollToEnd({ animated: false });
       }
     }, 100);
-  }, []);
+  }, [calendarData]);
 
   function getWeeksToDisplay(): Date[] {
     const weeks: Date[] = [];
-    const WEEKS_IN_PAST = 2;
-    const earliestWeekStart = startOfWeek(subWeeks(new Date(), WEEKS_IN_PAST), { weekStartsOn: 0 });
-    const latestWeekStart = startOfWeek(addWeeks(new Date(), 0), { weekStartsOn: 0 });
+    
+    // Find the earliest entry date
+    let earliestEntryDate = new Date();
+    Object.keys(calendarData).forEach(dateStr => {
+      const entryDate = new Date(dateStr);
+      if (isBefore(entryDate, earliestEntryDate)) {
+        earliestEntryDate = entryDate;
+      }
+    });
+    
+    // Start from one week before the earliest entry
+    const earliestWeekStart = startOfWeek(subWeeks(earliestEntryDate, 1), { weekStartsOn: 0 });
+    // End at current week
+    const latestWeekStart = startOfWeek(new Date(), { weekStartsOn: 0 });
 
     let cursor = earliestWeekStart;
     while (isBefore(cursor, addDays(latestWeekStart, 1))) {
@@ -91,6 +102,12 @@ export default function Calendar({ onDateSelect, selectedDate, entries }: Calend
         ref={flatListRef}
         data={weeksArray}
         keyExtractor={item => item.toISOString()}
+        showsVerticalScrollIndicator={true}
+        scrollEnabled={true}
+        windowSize={5} // Only render a few windows worth of content
+        maxToRenderPerBatch={2} // Render fewer items per batch
+        initialNumToRender={4} // Render fewer items initially
+        removeClippedSubviews={true} // Remove items outside of the viewport
         renderItem={({ item: weekStart, index }) => {
           const days = getWeekDates(weekStart);
           const currentMonth = getMonth(days[0]);

@@ -382,7 +382,9 @@ img {
   align-items: center;
   gap: var(--sp-md);
   z-index: 190;
-  max-width: calc(100vw - var(--sp-lg));
+  width: calc(100vw - var(--sp-lg));
+  max-width: 480px;
+  box-sizing: border-box;
 }
 
 .install-toast__text {

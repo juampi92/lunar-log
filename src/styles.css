@@ -73,16 +73,22 @@ img {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  transform-origin: bottom center;
-  animation: nightsky-rotate 1s ease-out forwards;
+  transform-origin: center center;
+  animation: nightsky-drift 600s linear infinite;
+  will-change: transform;
 }
 
-@keyframes nightsky-rotate {
-  from {
-    transform: translateY(0) rotate(0deg);
+@keyframes nightsky-drift {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+    animation-timing-function: linear;
   }
-  to {
-    transform: translateY(0) rotate(2deg);
+  0.1667% {
+    transform: translate3d(0, 0, 0) rotate(1.2deg);
+    animation-timing-function: ease-out;
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(360deg);
   }
 }
 
@@ -360,4 +366,31 @@ img {
   align-items: center;
   gap: var(--sp-md);
   z-index: 200;
+}
+
+/* Install prompt */
+.install-toast {
+  position: fixed;
+  bottom: calc(var(--sp-md) + var(--safe-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface);
+  border-radius: var(--br-md);
+  padding: var(--sp-md) var(--sp-lg);
+  box-shadow: var(--shadow-small);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-md);
+  z-index: 190;
+  max-width: calc(100vw - var(--sp-lg));
+}
+
+.install-toast__text {
+  color: var(--text-primary);
+  font-size: var(--fs-md);
+}
+
+.actions__btn--install {
+  font-weight: 500;
+  padding: var(--sp-xs) var(--sp-md);
 }

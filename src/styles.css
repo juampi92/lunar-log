@@ -39,6 +39,8 @@ img {
   flex-direction: column;
   height: 100%;
   height: 100dvh;
+  max-width: 480px;
+  margin: 0 auto;
   padding: calc(var(--sp-xxl) + var(--sp-md) + var(--safe-top)) 0 var(--sp-md);
 }
 

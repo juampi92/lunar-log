@@ -4,6 +4,7 @@ import NightSkyBackground from './components/NightSkyBackground';
 import Calendar from './components/Calendar';
 import DateActionsMenu from './components/DateActionsMenu';
 import CropModal from './components/CropModal';
+import InstallPrompt from './components/InstallPrompt';
 import { MoonStorage } from './storage/moonDb';
 import { revokeObjectUrl } from './storage/objectUrlCache';
 import { takePicture, pickFromGallery } from './services/imageService';
@@ -126,6 +127,8 @@ export default function App() {
           onCancel={() => setPendingFile(null)}
         />
       )}
+
+      <InstallPrompt />
 
       {needRefresh && (
         <div className="update-toast">

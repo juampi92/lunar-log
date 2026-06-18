@@ -3,8 +3,10 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import path from 'node:path';
 
+const basePath = process.env.VITE_BASE_PATH || '/';
+
 export default defineConfig({
-  base: process.env.VITE_BASE_PATH || '/',
+  base: basePath,
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
@@ -16,7 +18,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['pwa-192.png', 'pwa-512.png', 'pwa-1024.png'],
       manifest: {
-        id: '/',
+        id: basePath,
         name: 'Lunar Log',
         short_name: 'Lunar Log',
         description: 'A daily journal of the moon.',
@@ -24,8 +26,8 @@ export default defineConfig({
         background_color: '#0A1A2F',
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '/',
-        scope: '/',
+        start_url: basePath,
+        scope: basePath,
         icons: [
           {
             src: 'pwa-192.png',

@@ -18,9 +18,15 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 }
 
 /**
- * Draw the cropped region of `image` (at natural resolution) onto a canvas,
- * optionally downscaling so the longest side is at most `maxDimension`, then
- * return a JPEG Blob.
+ * Crop `image` to `crop` (in natural pixels) and return a JPEG Blob, optionally
+ * downscaled so the longest side is at most `maxDimension`.
+ *
+ * Coordinates follow react-easy-crop's `croppedAreaPixels` convention:
+ * `crop.x` / `crop.y` are the top-left of the crop within the source image,
+ * measured in the image's natural pixels.
+ *
+ * Uses `naturalWidth` / `naturalHeight` defensively so the math is correct
+ * regardless of any CSS sizing that may have been applied to the element.
  */
 export async function getCroppedBlob(
   image: HTMLImageElement,
@@ -29,49 +35,74 @@ export async function getCroppedBlob(
   maxDimension = MAX_DIMENSION,
   quality = JPEG_QUALITY
 ): Promise<Blob> {
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('Canvas 2D context unavailable');
+  // Use the image's natural resolution, not its rendered size on screen.
+  // Rendered size is affected by CSS sizing and `devicePixelRatio`, while
+  // `croppedAreaPixels` from react-easy-crop is always in natural pixels.
+  const naturalW = image.naturalWidth || image.width;
+  const naturalH = image.naturalHeight || image.height;
 
-  const safeArea = Math.max(image.width, image.height) * 2;
+  // First, render the source image at its natural resolution into a "full"
+  // canvas. This lets us handle rotation cleanly when it's wired through
+  // and gives the next step a single, well-defined source rectangle.
+  const swap = rotation === 90 || rotation === 270;
+  const fullW = swap ? naturalH : naturalW;
+  const fullH = swap ? naturalW : naturalH;
 
-  canvas.width = safeArea;
-  canvas.height = safeArea;
+  const full = document.createElement('canvas');
+  full.width = fullW;
+  full.height = fullH;
+  const fullCtx = full.getContext('2d');
+  if (!fullCtx) throw new Error('Canvas 2D context unavailable');
 
-  ctx.translate(safeArea / 2, safeArea / 2);
-  ctx.rotate((rotation * Math.PI) / 180);
-  ctx.translate(-safeArea / 2, -safeArea / 2);
-  ctx.drawImage(image, safeArea / 2 - image.width * 0.5, safeArea / 2 - image.height * 0.5);
+  if (rotation !== 0) {
+    fullCtx.translate(fullW / 2, fullH / 2);
+    fullCtx.rotate((rotation * Math.PI) / 180);
+    fullCtx.drawImage(image, -naturalW / 2, -naturalH / 2);
+  } else {
+    fullCtx.drawImage(image, 0, 0);
+  }
 
-  const data = ctx.getImageData(0, 0, safeArea, safeArea);
+  // Extract the crop region at 1:1 with drawImage's source/dest rect API.
+  // Clamp coordinates so we never read outside the rendered image.
+  const sx = Math.max(0, Math.round(crop.x));
+  const sy = Math.max(0, Math.round(crop.y));
+  const sw = Math.max(1, Math.min(full.width - sx, Math.round(crop.width)));
+  const sh = Math.max(1, Math.min(full.height - sy, Math.round(crop.height)));
 
-  // Output canvas at the cropped region's natural size.
-  let outW = Math.round(crop.width);
-  let outH = Math.round(crop.height);
-  const scale = Math.min(1, maxDimension / Math.max(outW, outH));
-  outW = Math.round(outW * scale);
-  outH = Math.round(outH * scale);
+  const cropped = document.createElement('canvas');
+  cropped.width = sw;
+  cropped.height = sh;
+  const croppedCtx = cropped.getContext('2d');
+  if (!croppedCtx) throw new Error('Canvas 2D context unavailable');
+  croppedCtx.drawImage(full, sx, sy, sw, sh, 0, 0, sw, sh);
+
+  // Downscale (with proper resampling) if needed. drawImage into a smaller
+  // destination canvas resamples using the canvas's smoothing settings, unlike
+  // putImageData which is a strict 1:1 copy and would only show a corner of
+  // the intended crop.
+  const longestSide = Math.max(sw, sh);
+  const scale = Math.min(1, maxDimension / longestSide);
+  const outW = Math.max(1, Math.round(sw * scale));
+  const outH = Math.max(1, Math.round(sh * scale));
+
+  if (outW === sw && outH === sh) {
+    return encodeJpeg(cropped, quality);
+  }
 
   const out = document.createElement('canvas');
   out.width = outW;
   out.height = outH;
   const outCtx = out.getContext('2d');
   if (!outCtx) throw new Error('Canvas 2D context unavailable');
+  outCtx.imageSmoothingEnabled = true;
+  outCtx.imageSmoothingQuality = 'high';
+  outCtx.drawImage(cropped, 0, 0, sw, sh, 0, 0, outW, outH);
+  return encodeJpeg(out, quality);
+}
 
-  outCtx.putImageData(
-    data,
-    Math.round(safeArea / 2 - image.width * 0.5 - crop.x),
-    Math.round(safeArea / 2 - image.height * 0.5 - crop.y)
-  );
-
-  // Downscale to final size if needed.
-  if (out.width !== outW || out.height !== outH) {
-    out.width = outW;
-    out.height = outH;
-  }
-
-  return new Promise<Blob>((resolve, reject) => {
-    out.toBlob(
+function encodeJpeg(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
       blob => {
         if (blob) resolve(blob);
         else reject(new Error('Failed to encode cropped image'));

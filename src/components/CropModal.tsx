@@ -44,19 +44,26 @@ export default function CropModal({ file, onConfirm, onCancel }: CropModalProps)
             crop={crop}
             zoom={zoom}
             aspect={1}
+            showGrid={false}
             onCropChange={setCrop}
             onZoomChange={setZoom}
             onCropComplete={onCropComplete}
           />
         )}
+        <div className="crop__grid" aria-hidden="true">
+          <div className="crop__grid-line crop__grid-line--v" style={{ left: '25%' }} />
+          <div className="crop__grid-line crop__grid-line--v" style={{ left: '75%' }} />
+          <div className="crop__grid-line crop__grid-line--h" style={{ top: '25%' }} />
+          <div className="crop__grid-line crop__grid-line--h" style={{ top: '75%' }} />
+        </div>
       </div>
       <div className="crop__controls">
         <input
           type="range"
           className="crop__slider"
           min={1}
-          max={3}
-          step={0.1}
+          max={6}
+          step={0.05}
           value={zoom}
           onChange={e => setZoom(Number(e.target.value))}
         />

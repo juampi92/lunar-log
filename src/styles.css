@@ -283,6 +283,32 @@ img {
   background: #000;
 }
 
+.crop__grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.crop__grid-line {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.crop__grid-line--v {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  transform: translateX(-0.5px);
+}
+
+.crop__grid-line--h {
+  left: 0;
+  right: 0;
+  height: 1px;
+  transform: translateY(-0.5px);
+}
+
 .crop__controls {
   margin-top: var(--sp-md);
   width: 100%;

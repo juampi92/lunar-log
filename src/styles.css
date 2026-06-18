@@ -1,0 +1,363 @@
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  color: var(--text-primary);
+  background-color: var(--bg-gradient-start);
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+button {
+  font-family: inherit;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+img {
+  display: block;
+}
+
+/* App layout */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  height: 100dvh;
+  padding: calc(var(--sp-xxl) + var(--sp-md) + var(--safe-top)) 0 var(--sp-md);
+}
+
+.app__logo {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 50px;
+}
+
+.app__calendar {
+  flex: 3;
+  min-height: 0;
+}
+
+.app__actions {
+  flex: 1;
+  padding-bottom: calc(var(--sp-md) + var(--safe-bottom));
+}
+
+/* Night sky background */
+.nightsky {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(to bottom, var(--bg-gradient-start), var(--bg-gradient-end));
+  overflow: hidden;
+  z-index: 0;
+}
+
+.nightsky__stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform-origin: bottom center;
+  animation: nightsky-rotate 1s ease-out forwards;
+}
+
+@keyframes nightsky-rotate {
+  from {
+    transform: translateY(0) rotate(0deg);
+  }
+  to {
+    transform: translateY(0) rotate(2deg);
+  }
+}
+
+.nightsky__star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: var(--text-primary);
+  border-radius: 50%;
+  opacity: 0;
+  animation: nightsky-fade 1s ease-out forwards;
+}
+
+@keyframes nightsky-fade {
+  to {
+    opacity: 1;
+  }
+}
+
+.app__content {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Calendar */
+.calendar {
+  height: 100%;
+  padding: 0 var(--sp-md);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.calendar__week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--sp-xs);
+  margin-bottom: var(--sp-sm);
+}
+
+.calendar__cell {
+  aspect-ratio: 1 / 1;
+  border: 1px solid var(--calendar-border);
+  border-radius: var(--br-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-small);
+  overflow: hidden;
+  background: transparent;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  width: 100%;
+  max-width: 48px;
+  margin: 0 auto;
+}
+
+.calendar__cell:active:not(:disabled) {
+  background: var(--calendar-hover);
+  border-color: var(--primary-light);
+}
+
+.calendar__cell--today {
+  background: var(--calendar-today);
+  border-color: var(--primary-light);
+}
+
+.calendar__cell--selected {
+  background: var(--calendar-selected);
+  border: 2px solid var(--calendar-selected-border);
+  transform: scale(1.05);
+}
+
+.calendar__cell--future {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.calendar__cell--ghost {
+  border-color: transparent;
+  opacity: 0;
+  box-shadow: none;
+}
+
+.calendar__cell-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.calendar__month-sep {
+  display: flex;
+  align-items: center;
+  margin: var(--sp-md) 0;
+}
+
+.calendar__month-line {
+  flex: 1;
+  height: 1px;
+  background: var(--divider);
+}
+
+.calendar__month-label {
+  color: var(--text-primary);
+  margin: 0 var(--sp-md);
+  font-size: var(--fs-md);
+  font-weight: 500;
+}
+
+/* Date actions menu */
+.actions {
+  background: var(--surface);
+  border-radius: var(--br-md);
+  padding: var(--sp-md);
+  margin: 0 var(--sp-md);
+  box-shadow: var(--shadow-small);
+}
+
+.actions__date {
+  color: var(--text-primary);
+  font-size: var(--fs-lg);
+  font-weight: 500;
+  margin-bottom: var(--sp-md);
+}
+
+.actions__buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-md);
+}
+
+.actions__btn {
+  width: var(--sp-xxl);
+  height: var(--sp-xxl);
+  border-radius: var(--br-round);
+  background: var(--surface-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-small);
+}
+
+.actions__btn--danger {
+  background: var(--error);
+}
+
+.actions__content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.actions__entry {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+}
+
+.actions__entry-img {
+  width: var(--sp-xxl);
+  height: var(--sp-xxl);
+  border-radius: var(--br-sm);
+  object-fit: cover;
+  box-shadow: var(--shadow-small);
+}
+
+.actions__not-seen {
+  font-size: var(--fs-md);
+}
+
+/* Crop modal */
+.crop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-md);
+}
+
+.crop__title {
+  color: var(--text-primary);
+  font-size: var(--fs-lg);
+  margin-bottom: var(--sp-md);
+}
+
+.crop__container {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  aspect-ratio: 1 / 1;
+  background: #000;
+}
+
+.crop__grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.crop__grid-line {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.crop__grid-line--v {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  transform: translateX(-0.5px);
+}
+
+.crop__grid-line--h {
+  left: 0;
+  right: 0;
+  height: 1px;
+  transform: translateY(-0.5px);
+}
+
+.crop__controls {
+  margin-top: var(--sp-md);
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-md);
+}
+
+.crop__slider {
+  width: 100%;
+}
+
+.crop__actions {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-md);
+}
+
+.crop__action-btn {
+  flex: 1;
+  padding: var(--sp-md);
+  border-radius: var(--br-sm);
+  font-size: var(--fs-md);
+  font-weight: 500;
+}
+
+.crop__action-btn--confirm {
+  background: var(--primary);
+  color: var(--text-primary);
+}
+
+.crop__action-btn--cancel {
+  background: var(--surface-light);
+  color: var(--text-primary);
+}
+
+/* Update prompt */
+.update-toast {
+  position: fixed;
+  bottom: calc(var(--sp-md) + var(--safe-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface);
+  border-radius: var(--br-md);
+  padding: var(--sp-md) var(--sp-lg);
+  box-shadow: var(--shadow-small);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-md);
+  z-index: 200;
+}

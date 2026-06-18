@@ -1,0 +1,71 @@
+:root {
+  /* Primary palette */
+  --primary: #3b5f8a;
+  --primary-light: #4f7cad;
+  --primary-dark: #2a4365;
+
+  /* Secondary palette */
+  --secondary: #8a3b5f;
+  --secondary-light: #ad4f7c;
+  --secondary-dark: #652a43;
+
+  /* Background gradients */
+  --bg-gradient-start: #0a1a2f;
+  --bg-gradient-end: #1e3a5f;
+
+  /* UI elements */
+  --surface: rgba(30, 40, 60, 0.85);
+  --surface-light: rgba(50, 65, 95, 0.85);
+
+  /* Text */
+  --text-primary: #ffffff;
+  --text-secondary: #e0e0e0;
+  --text-muted: #a0a0a0;
+
+  /* Status colors */
+  --success: #4caf50;
+  --warning: #ffc107;
+  --error: #e53935;
+  --info: #2196f3;
+
+  /* Calendar */
+  --calendar-border: #4f7cad;
+  --calendar-today: rgba(79, 124, 173, 0.5);
+  --calendar-selected: rgba(79, 124, 173, 0.8);
+  --calendar-selected-border: #ffffff;
+  --calendar-hover: rgba(79, 124, 173, 0.3);
+
+  /* Misc */
+  --divider: rgba(255, 255, 255, 0.2);
+  --transparent: transparent;
+
+  /* Spacing */
+  --sp-xs: 4px;
+  --sp-sm: 8px;
+  --sp-md: 16px;
+  --sp-lg: 24px;
+  --sp-xl: 32px;
+  --sp-xxl: 48px;
+
+  /* Border radius */
+  --br-xs: 4px;
+  --br-sm: 8px;
+  --br-md: 12px;
+  --br-lg: 16px;
+  --br-xl: 24px;
+  --br-round: 999px;
+
+  /* Typography */
+  --fs-xs: 12px;
+  --fs-sm: 14px;
+  --fs-md: 16px;
+  --fs-lg: 18px;
+  --fs-xl: 24px;
+  --fs-xxl: 32px;
+
+  /* Shadows */
+  --shadow-small: 0 2px 4px rgba(0, 0, 0, 0.25);
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}

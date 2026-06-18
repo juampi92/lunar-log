@@ -1,59 +1,56 @@
-import { Alert } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
+function pickFile(accept: string, capture?: boolean): Promise<File | null> {
+  return new Promise(resolve => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = accept;
+    if (capture) {
+      input.setAttribute('capture', 'environment');
+    }
+    input.style.display = 'none';
 
-const imagePickerOptions: ImagePicker.ImagePickerOptions = {
-  mediaTypes: 'images',
-  allowsEditing: true,
-  aspect: [1, 1],
-  quality: 1,
-};
+    let settled = false;
+
+    const cleanup = () => {
+      input.removeEventListener('change', onChange);
+      window.removeEventListener('focus', onFocus);
+      document.body.removeChild(input);
+    };
+
+    const onChange = () => {
+      settled = true;
+      const file = input.files && input.files[0];
+      cleanup();
+      resolve(file ?? null);
+    };
+
+    // If the user dismisses the picker, no `change` event fires. We use the
+    // window `focus` event (fired when the dialog closes) as a fallback: if no
+    // file was chosen shortly after, resolve with null.
+    const onFocus = () => {
+      window.setTimeout(() => {
+        if (!settled) {
+          cleanup();
+          resolve(null);
+        }
+      }, 300);
+    };
+
+    input.addEventListener('change', onChange);
+    window.addEventListener('focus', onFocus);
+    document.body.appendChild(input);
+    input.click();
+  });
+}
 
 /**
- * Take a picture with the device camera and crop it to a 1:1 aspect ratio
- * @returns The URI of the cropped image or null if canceled
+ * Open the OS camera (iOS Safari / Android Chrome hand off to the native
+ * camera app via the `capture` attribute). Resolves with the captured File or
+ * null if canceled.
  */
-export const takePicture = async (): Promise<string | null> => {
-  const { status } = await ImagePicker.requestCameraPermissionsAsync();
-  if (status !== 'granted') {
-    Alert.alert('Permission Required', 'Camera permission is needed to take pictures');
-    return null;
-  }
-
-  try {
-    const result = await ImagePicker.launchCameraAsync(imagePickerOptions);
-
-    if (result.canceled) {
-      return null;
-    }
-
-    return result.assets[0].uri;
-  } catch (error) {
-    console.error('Error taking picture:', error);
-    return null;
-  }
-};
+export const takePicture = (): Promise<File | null> => pickFile('image/*', true);
 
 /**
- * Pick an image from the device gallery and crop it to a 1:1 aspect ratio
- * @returns The URI of the cropped image or null if canceled
+ * Open the OS photo/gallery picker. Resolves with the chosen File or null if
+ * canceled.
  */
-export const pickFromGallery = async (): Promise<string | null> => {
-  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (status !== 'granted') {
-    Alert.alert('Permission Required', 'Photo library permission is needed to select images');
-    return null;
-  }
-
-  try {
-    const result = await ImagePicker.launchImageLibraryAsync(imagePickerOptions);
-
-    if (result.canceled) {
-      return null;
-    }
-
-    return result.assets[0].uri;
-  } catch (error) {
-    console.error('Error picking from gallery:', error);
-    return null;
-  }
-};
+export const pickFromGallery = (): Promise<File | null> => pickFile('image/*', false);

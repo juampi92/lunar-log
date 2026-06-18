@@ -1,6 +1,6 @@
 export interface MoonEntry {
   date: string; // ISO date string YYYY-MM-DD
-  image?: string; // Local file path
+  image?: string; // image id referencing the IndexedDB `images` store
   moon: number; // Moon phase as float 0-1
   missed?: string; // Reason for missing the photo
   notSeen?: boolean; // Whether the moon was not visible/not seen

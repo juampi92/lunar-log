@@ -1,61 +1,67 @@
-<table>
-  <tr>
-    <td style="vertical-align: top; padding-right: 16px;">
-      <img src="assets/splash-icon.png" alt="Lunar Log Logo" width="90" />
-    </td>
-    <td style="vertical-align: top;">
-      <div style="font-size:2.5em; font-weight:bold; color:#2c3350;">Lunar Log</div>
-      <div style="font-style: italic; color:#2c3350; margin-top: 4px;">Daily pictures of the moon</div>
-    </td>
-  </tr>
-</table>
+# 🌙 Lunar Log
 
-## About
+A daily journal of the moon. Take or pick a photo each day, crop it to the moon, and build a visual calendar of the moon's phases over time. Lunar Log is a **fully client-side Progressive Web App** — all data lives in your browser (IndexedDB), and once installed it works completely offline.
 
-Lunar Log is an Expo-based mobile application for iOS and Android that allows you to take daily pictures of the moon. Check the [motivation](#motivation) if you're interested.
+## Features
 
-## Screenshots
-
-<p align="center">
-  <img src="assets/screenshots/screenshot1.png" alt="Screenshot 1" width="200" />
-  <img src="assets/screenshots/screenshot2.png" alt="Screenshot 2" width="200" />
-  <img src="assets/screenshots/screenshot3.png" alt="Screenshot 3" width="200" />
-</p>
-
-
-### Features
-- Calendar view
-- Pick from gallery or take a picture
+- Calendar view of your moon log
+- Take a picture with the camera or pick from the gallery
 - Crop the image to focus on the moon
-- Mark day as "Not seen"
+- Mark a day as "Not seen"
+- Installable on desktop and mobile home screens
+- Runs fully offline after first load
 
-## Running the App
+## Getting Started
 
-```bash
-expo start
-```
-
-- Scan the QR code with Expo Go on your device.
-- Or run on simulators:
-  - `expo run:ios`
-  - `expo run:android`
-
-For deeper customization or standalone builds, see the [Expo Documentation](https://docs.expo.dev).
-
-## Building for Production
-
-We use [EAS](https://docs.expo.dev/build/introduction/) for production builds:
+Requirements: Node.js 18+ and npm.
 
 ```bash
-eas build --platform ios
-eas build --platform android
+npm install
+npm run dev
 ```
 
-You'll need to configure your `eas.json` and have access to your Apple and Google credentials.
+The dev server runs at `http://localhost:5173`. The service worker is enabled in dev, so you can test the install prompt locally (Chrome/Edge only — over HTTPS or localhost).
+
+### Production build & preview
+
+```bash
+npm run build
+npm run preview
+```
+
+`npm run build` runs `tsc --noEmit` (typecheck) followed by `vite build`, emitting `dist/` with `sw.js`, `manifest.webmanifest`, and the precached app shell. `npm run preview` serves the production build locally.
+
+## Installing the app
+
+**Android (Chrome/Edge):** open the site → the in-app install banner appears, or use the menu → **Install app**.
+
+**iOS (Safari):** open the site → tap **Share** → **Add to Home Screen**. Lunar Log shows an in-app banner with these instructions on first visit.
+
+**Desktop (Chrome/Edge):** click the install icon in the address bar.
+
+Once installed, Lunar Log launches in its own standalone window and works in airplane mode — all assets and entries are stored on-device.
+
+## Sub-path deployment
+
+By default the app is served from the domain root. To host from a sub-path, set `VITE_BASE_PATH` at build time:
+
+```bash
+VITE_BASE_PATH=/lunar-log/ npm run build
+```
+
+> Note: the manifest's `start_url` and `scope` are set to `/`. For sub-path hosting you may need to adjust these in `vite.config.ts` to match `VITE_BASE_PATH`.
+
+## Tech stack
+
+- [Vite](https://vitejs.dev/) + React + TypeScript
+- [vite-plugin-pwa](https://vite-pwa-org.netlify.app/) for the service worker / manifest
+- [idb](https://github.com/jakearchibald/idb) for IndexedDB storage
+- [react-easy-crop](https://github.com/ValentineFournier/react-easy-crop) for image cropping
+- [lucide-react](https://lucide.dev/) for icons
 
 ## Contributing
 
-Feel free to contribute! If your additions diverge from the motivation, you are free to fork it and keep your own version.
+Feel free to contribute! If your additions diverge from the motivation below, you are free to fork it and keep your own version.
 
 ## Motivation
 

@@ -44,6 +44,7 @@ export default function CropModal({ file, onConfirm, onCancel }: CropModalProps)
             crop={crop}
             zoom={zoom}
             aspect={1}
+            maxZoom={6}
             showGrid={false}
             onCropChange={setCrop}
             onZoomChange={setZoom}

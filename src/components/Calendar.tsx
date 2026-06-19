@@ -1,19 +1,18 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  addDays,
   startOfWeek,
+  endOfWeek,
+  eachDayOfInterval,
   format,
   isAfter,
   isBefore,
-  addWeeks,
+  isSameMonth,
   subWeeks,
-  getMonth,
+  getDay,
 } from 'date-fns';
 import { EyeOff } from 'lucide-react';
 import { MoonEntry } from '../storage/types';
 import { getObjectUrl } from '../storage/objectUrlCache';
-
-const DAYS_IN_WEEK = 7;
 
 interface CalendarProps {
   onDateSelect: (date: Date) => void;
@@ -21,14 +20,108 @@ interface CalendarProps {
   entries: Record<string, MoonEntry>;
 }
 
-interface CellEntry {
-  image?: string;
-  notSeen?: boolean;
+interface DayCellInfo {
+  date: Date;
+  dayStr: string;
+  dayNum: number;
+  entry?: MoonEntry;
+  isToday: boolean;
+  isSelected: boolean;
+  isFuture: boolean;
 }
 
-function getWeekDates(date: Date): Date[] {
-  const start = startOfWeek(date, { weekStartsOn: 0 });
-  return Array.from({ length: DAYS_IN_WEEK }, (_, i) => addDays(start, i));
+interface Week {
+  key: string;
+  days: (DayCellInfo | null)[];
+  separatorLabel: string | null;
+}
+
+// A month-week segment is a maximal run of consecutive days that are both in
+// the same calendar month and within the same Sun-Sat week. The calendar is
+// the flat chronological sequence of these segments. A new segment begins on
+// Sunday (week boundary) or whenever the month changes.
+function splitIntoMonthWeekSegments(days: Date[]): Date[][] {
+  return days.reduce<Date[][]>((segments, day) => {
+    const current = segments[segments.length - 1];
+    const last = current?.[current.length - 1];
+    const startsNewSegment = !last || getDay(day) === 0 || !isSameMonth(day, last);
+    if (startsNewSegment) segments.push([day]);
+    else current!.push(day);
+    return segments;
+  }, []);
+}
+
+// A separator label appears on the first segment of each new month; the year
+// suffix appears on the first label overall and on the first segment of each
+// subsequent calendar year. Both decisions compare only to the prior segment.
+function labelFor(prevFirst: Date | undefined, first: Date): string | null {
+  if (prevFirst && isSameMonth(prevFirst, first)) return null;
+  const showYear = !prevFirst || prevFirst.getFullYear() !== first.getFullYear();
+  return format(first, showYear ? 'MMMM yyyy' : 'MMMM');
+}
+
+function buildWeeks({
+  entries,
+  today,
+  selectedDate,
+}: {
+  entries: Record<string, MoonEntry>;
+  today: Date;
+  selectedDate: Date;
+}): Week[] {
+  const byDate = new Map<string, MoonEntry>();
+  for (const entry of Object.values(entries)) {
+    if (entry.date) byDate.set(entry.date, entry);
+  }
+
+  const todayStr = format(today, 'yyyy-MM-dd');
+  const selectedStr = format(selectedDate, 'yyyy-MM-dd');
+
+  let earliestEntryDate = new Date();
+  for (const dateStr of byDate.keys()) {
+    const entryDate = new Date(dateStr);
+    if (isBefore(entryDate, earliestEntryDate)) earliestEntryDate = entryDate;
+  }
+
+  const start = startOfWeek(subWeeks(earliestEntryDate, 1), { weekStartsOn: 0 });
+  const end = endOfWeek(today, { weekStartsOn: 0 });
+  const allDays = eachDayOfInterval({ start, end });
+
+  const segments = splitIntoMonthWeekSegments(allDays);
+
+  const toDayCell = (day: Date): DayCellInfo => {
+    const dayStr = format(day, 'yyyy-MM-dd');
+    return {
+      date: day,
+      dayStr,
+      dayNum: Number(format(day, 'd')),
+      entry: byDate.get(dayStr),
+      isToday: dayStr === todayStr,
+      isSelected: dayStr === selectedStr,
+      isFuture: isAfter(day, today),
+    };
+  };
+
+  return segments.map((segmentDays, i) => {
+    const first = segmentDays[0];
+    const last = segmentDays[segmentDays.length - 1];
+    const prev = segments[i - 1];
+
+    // Each row is a full 7-slot Sun-Sat row. Days outside this segment's month
+    // (belonging to the adjacent month's segment) are null ghost placeholders,
+    // positioned by weekday index so columns stay aligned across rows.
+    const days: (DayCellInfo | null)[] = [
+      ...Array.from({ length: getDay(first) }, () => null),
+      ...segmentDays.map(toDayCell),
+      ...Array.from({ length: 6 - getDay(last) }, () => null),
+    ];
+
+    return {
+      key: first.toISOString(),
+      days,
+      separatorLabel: labelFor(prev?.[0], first),
+    };
+  });
 }
 
 function DayThumbnail({ imageId }: { imageId: string }) {
@@ -48,113 +141,89 @@ function DayThumbnail({ imageId }: { imageId: string }) {
   return <img className="calendar__cell-img" src={url} alt="" />;
 }
 
+function MonthSeparator({ label }: { label: string }) {
+  return (
+    <div className="calendar__month-sep">
+      <div className="calendar__month-line" />
+      <span className="calendar__month-label">{label}</span>
+      <div className="calendar__month-line" />
+    </div>
+  );
+}
+
+function DayCell({ day, onDateSelect }: { day: DayCellInfo; onDateSelect: (date: Date) => void }) {
+  const classes = ['calendar__cell'];
+  if (day.isToday) classes.push('calendar__cell--today');
+  if (day.isSelected) classes.push('calendar__cell--selected');
+  if (day.isFuture) classes.push('calendar__cell--future');
+
+  return (
+    <button
+      key={day.dayStr}
+      className={classes.join(' ')}
+      disabled={day.isFuture}
+      onClick={() => !day.isFuture && onDateSelect(day.date)}
+    >
+      {day.entry?.notSeen ? (
+        <EyeOff size={18} color="#fff" />
+      ) : day.entry?.image ? (
+        <DayThumbnail imageId={day.entry.image} />
+      ) : (
+        <span>{day.dayNum}</span>
+      )}
+    </button>
+  );
+}
+
+function WeekRow({
+  days,
+  onDateSelect,
+}: {
+  days: (DayCellInfo | null)[];
+  onDateSelect: (date: Date) => void;
+}) {
+  return (
+    <div className="calendar__week">
+      {days.map((day, i) =>
+        day === null ? (
+          <div
+            key={`ghost-${i}`}
+            className="calendar__cell calendar__cell--ghost"
+            aria-hidden="true"
+          />
+        ) : (
+          <DayCell key={day.dayStr} day={day} onDateSelect={onDateSelect} />
+        )
+      )}
+    </div>
+  );
+}
+
 export default function Calendar({ onDateSelect, selectedDate, entries }: CalendarProps) {
   const today = useRef(new Date()).current;
-  const [calendarData, setCalendarData] = useState<Record<string, CellEntry>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
+  const weeks = useMemo(
+    () => buildWeeks({ entries, today, selectedDate }),
+    [entries, today, selectedDate]
+  );
 
   useEffect(() => {
-    const mapped: Record<string, CellEntry> = {};
-    for (const entry of Object.values(entries)) {
-      if (entry.date) {
-        mapped[entry.date] = { image: entry.image, notSeen: entry.notSeen };
-      }
-    }
-    setCalendarData(mapped);
-  }, [entries]);
-
-  useEffect(() => {
-    // Scroll to the bottom (most recent week) on mount / data change.
     const el = scrollRef.current;
     if (el) {
       window.setTimeout(() => {
         el.scrollTop = el.scrollHeight;
       }, 50);
     }
-  }, [calendarData]);
-
-  function getWeeksToDisplay(): Date[] {
-    const weeks: Date[] = [];
-
-    let earliestEntryDate = new Date();
-    Object.keys(calendarData).forEach(dateStr => {
-      const entryDate = new Date(dateStr);
-      if (isBefore(entryDate, earliestEntryDate)) {
-        earliestEntryDate = entryDate;
-      }
-    });
-
-    const earliestWeekStart = startOfWeek(subWeeks(earliestEntryDate, 1), { weekStartsOn: 0 });
-    const latestWeekStart = startOfWeek(new Date(), { weekStartsOn: 0 });
-
-    let cursor = earliestWeekStart;
-    while (isBefore(cursor, addDays(latestWeekStart, 1))) {
-      weeks.push(cursor);
-      cursor = addWeeks(cursor, 1);
-    }
-
-    return weeks;
-  }
-
-  const weeksArray = getWeeksToDisplay();
-  const todayStr = format(today, 'yyyy-MM-dd');
-  const selectedStr = format(selectedDate, 'yyyy-MM-dd');
+  }, []);
 
   return (
     <div className="calendar" ref={scrollRef}>
-      {weeksArray.map((weekStart, index) => {
-        const days = getWeekDates(weekStart);
-        const currentMonth = getMonth(days[0]);
-        const nextWeek =
-          index < weeksArray.length - 1 ? getWeekDates(weeksArray[index + 1])[0] : null;
-        const isMonthChange = nextWeek ? getMonth(nextWeek) !== currentMonth : false;
-
-        return (
-          <div key={weekStart.toISOString()}>
-            <div className="calendar__week">
-              {days.map(day => {
-                const dayStr = format(day, 'yyyy-MM-dd');
-                const dayNum = Number(format(day, 'd'));
-                const entryData = calendarData[dayStr];
-                const isToday = dayStr === todayStr;
-                const isSelected = dayStr === selectedStr;
-                const isFuture = isAfter(day, today);
-
-                const classes = ['calendar__cell'];
-                if (isToday) classes.push('calendar__cell--today');
-                if (isSelected) classes.push('calendar__cell--selected');
-                if (isFuture) classes.push('calendar__cell--future');
-
-                return (
-                  <button
-                    key={dayStr}
-                    className={classes.join(' ')}
-                    disabled={isFuture}
-                    onClick={() => !isFuture && onDateSelect(day)}
-                  >
-                    {entryData?.notSeen ? (
-                      <EyeOff size={18} color="#fff" />
-                    ) : entryData?.image ? (
-                      <DayThumbnail imageId={entryData.image} />
-                    ) : (
-                      <span>{dayNum}</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-            {isMonthChange && nextWeek && (
-              <div className="calendar__month-sep">
-                <div className="calendar__month-line" />
-                <span className="calendar__month-label">
-                  {format(new Date(today.getFullYear(), getMonth(nextWeek)), 'MMMM')}
-                </span>
-                <div className="calendar__month-line" />
-              </div>
-            )}
-          </div>
-        );
-      })}
+      {weeks.map(week => (
+        <div key={week.key}>
+          {week.separatorLabel && <MonthSeparator label={week.separatorLabel} />}
+          <WeekRow days={week.days} onDateSelect={onDateSelect} />
+        </div>
+      ))}
     </div>
   );
 }

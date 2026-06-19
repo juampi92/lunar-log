@@ -121,7 +121,7 @@ img {
 
 /* Calendar */
 .calendar {
-  height: 100%;
+  height: 95%;
   padding: 0 var(--sp-md);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
